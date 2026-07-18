@@ -9,6 +9,7 @@ import path from 'path';
 import { clerkMiddleware } from '@clerk/express'
 
 import { connectDB } from "./lib/db.js";
+import job from "./lib/cron.js";
 
 const app = express();
 
@@ -27,11 +28,11 @@ app.get('/health', (req, res) => {
 
 // if the public directory exists, serve the static files
 // this is for production build
-if(fs.existsSync(publicDir)) {
+if (fs.existsSync(publicDir)) {
 
     app.use(express.static(publicDir))
 
-    app.get("/{*any}", (req,res,next) => {
+    app.get("/{*any}", (req, res, next) => {
         res.sendFile(path.join(publicDir, "index.html"), (err) => next(err));
     })
 
@@ -40,4 +41,7 @@ if(fs.existsSync(publicDir)) {
 app.listen(PORT, () => {
     connectDB();
     console.log(`Server is running in PORT ${PORT}`)
+
+    if (process.env.NODE_ENV === 'production') job.start();
+
 });
