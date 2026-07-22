@@ -1,4 +1,4 @@
-export const APP_NAME = "Mern chat app";
+export const APP_NAME = "iChat";
 
 export function AppLogo({ className = "", size = 32, alt = APP_NAME }) {
   return (
