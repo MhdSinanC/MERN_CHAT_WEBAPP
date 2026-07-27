@@ -38,18 +38,14 @@ io.on("connection", (socket) => {
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
     socket.on("disconnect", (reason) => {
-        console.log("\n========== SOCKET DISCONNECT ==========");
-        console.log("User ID:", userId);
-        console.log("Socket ID:", socket.id);
-        console.log("Reason:", reason);
+        console.log("DISCONNECT:", userId, socket.id, reason);
 
-        if (userId) {
+        // Only remove the user if this socket is still the active one
+        if (userId && userSocketMap[userId] === socket.id) {
             delete userSocketMap[userId];
         }
 
         console.log("Current Socket Map:", userSocketMap);
-        console.log("Online Users:", Object.keys(userSocketMap));
-
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     });
 });
