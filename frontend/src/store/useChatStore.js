@@ -126,6 +126,7 @@ export const useChatStore = create(
             title: senderName,
             body: previewText,
             icon: senderAvatar,
+            conversationId: senderId,
             onClick: () => {
               setActiveConversationId(senderId);
             },

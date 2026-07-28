@@ -6,6 +6,7 @@ import ChatPage from './pages/ChatPage'
 import AuthPage from './pages/AuthPage'
 import PageLoader from './components/PageLoader'
 import { useAuthStore } from './store/useAuthStore'
+import { useChatStore } from './store/useChatStore'
 import { useEffect } from 'react'
 
 import { requestNotificationPermission } from './lib/notification'
@@ -15,13 +16,9 @@ function App() {
 
   const { isSignedIn, isLoaded } = useAuth();
 
-  //option 1
-  // const {clearAuth, checkAuth, isCheckingAuth} = useAuthStore();
-
-  //option 2 - better for performance
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const checkAuth = useAuthStore((state) => state.checkAuth);
-  const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth)
+  const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -32,7 +29,30 @@ function App() {
     } else {
       clearAuth();
     }
-  }, [checkAuth, clearAuth, isLoaded, isSignedIn])
+  }, [checkAuth, clearAuth, isLoaded, isSignedIn]);
+
+  // Handle Service Worker notification click message events (for mobile & desktop)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      const handleSwMessage = (event) => {
+        if (event.data?.type === 'NAVIGATE_CHAT' && event.data.conversationId) {
+          useChatStore.getState().setActiveConversationId(event.data.conversationId);
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+    }
+  }, []);
+
+  // Handle direct URL query parameter navigation when opened from notification click (e.g. /?chat=123)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const chatId = params.get('chat');
+    if (chatId) {
+      useChatStore.getState().setActiveConversationId(chatId);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   if (!isLoaded || (isSignedIn && isCheckingAuth)) return <PageLoader />
 
