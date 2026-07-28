@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
 import { playNotificationSound } from "../lib/sound";
+import { showDesktopNotification } from "../lib/notification";
 import toast from "react-hot-toast";
 
 export const useChatStore = create(
@@ -109,6 +110,26 @@ export const useChatStore = create(
           if (isSoundEnabled) {
             playNotificationSound();
           }
+
+          const { users, conversations, setActiveConversationId } = get();
+          const sender =
+            users.find((u) => String(u._id) === senderId) ||
+            conversations.find((u) => String(u._id) === senderId);
+
+          const senderName = sender ? sender.fullName : "New Message";
+          const senderAvatar = sender ? sender.profilePic : "";
+          const previewText =
+            newMessage.text ||
+            (newMessage.image ? "📷 Sent a photo" : newMessage.video ? "🎥 Sent a video" : "Sent a message");
+
+          showDesktopNotification({
+            title: senderName,
+            body: previewText,
+            icon: senderAvatar,
+            onClick: () => {
+              setActiveConversationId(senderId);
+            },
+          });
 
           get().getConversations();
         });

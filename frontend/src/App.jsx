@@ -8,6 +8,7 @@ import PageLoader from './components/PageLoader'
 import { useAuthStore } from './store/useAuthStore'
 import { useEffect } from 'react'
 
+import { requestNotificationPermission } from './lib/notification'
 import { Toaster } from 'react-hot-toast'
 
 function App() {
@@ -25,8 +26,12 @@ function App() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    if (isSignedIn) checkAuth();
-    else clearAuth();
+    if (isSignedIn) {
+      checkAuth();
+      requestNotificationPermission();
+    } else {
+      clearAuth();
+    }
   }, [checkAuth, clearAuth, isLoaded, isSignedIn])
 
   if (!isLoaded || (isSignedIn && isCheckingAuth)) return <PageLoader />
