@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
+import { playNotificationSound } from "../lib/sound";
 import toast from "react-hot-toast";
 
 export const useChatStore = create(
@@ -11,6 +12,7 @@ export const useChatStore = create(
       users: [],
       conversations: [],
       messages: [],
+      unreadCounts: {},
       selectedUser: null,
       isConversationsLoading: false,
       isUsersLoading: false,
@@ -80,18 +82,33 @@ export const useChatStore = create(
         }
       },
 
-      subscribeToMessages: (userId) => {
-        if (!userId) return;
-
+      subscribeToMessages: () => {
         const socket = useAuthStore.getState().socket;
         if (!socket) return;
 
         socket.off("newMessage");
         socket.on("newMessage", (newMessage) => {
-          // if im not the receiver don't do anything just return
-          if (String(newMessage.senderId) !== String(userId)) return;
+          const { activeConversationId, messages, isSoundEnabled, unreadCounts } = get();
+          const senderId = String(newMessage.senderId);
 
-          set({ messages: [...get().messages, newMessage] });
+          const isFromActiveConversation =
+            activeConversationId && String(activeConversationId) === senderId;
+
+          if (isFromActiveConversation) {
+            set({ messages: [...messages, newMessage] });
+          } else {
+            const currentCount = unreadCounts[senderId] || 0;
+            set({
+              unreadCounts: {
+                ...unreadCounts,
+                [senderId]: currentCount + 1,
+              },
+            });
+          }
+
+          if (isSoundEnabled) {
+            playNotificationSound();
+          }
 
           get().getConversations();
         });
@@ -105,14 +122,22 @@ export const useChatStore = create(
       setSelectedUser: (selectedUser) => set({ selectedUser }),
 
       setActiveConversationId: (activeConversationId) => {
-        set((state) => ({
-          activeConversationId,
-          selectedUser:
-            state.users.find((user) => user._id === activeConversationId) ||
-            state.conversations.find((user) => user._id === activeConversationId) ||
-            null,
-          messages: activeConversationId ? state.messages : [],
-        }));
+        set((state) => {
+          const newUnreadCounts = { ...state.unreadCounts };
+          if (activeConversationId && newUnreadCounts[activeConversationId]) {
+            delete newUnreadCounts[activeConversationId];
+          }
+
+          return {
+            activeConversationId,
+            selectedUser:
+              state.users.find((user) => user._id === activeConversationId) ||
+              state.conversations.find((user) => user._id === activeConversationId) ||
+              null,
+            messages: activeConversationId ? state.messages : [],
+            unreadCounts: newUnreadCounts,
+          };
+        });
       },
 
       setSearchQuery: (searchQuery) => set({ searchQuery }),

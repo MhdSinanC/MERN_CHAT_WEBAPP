@@ -21,17 +21,16 @@ function ChatPage() {
   useEffect(() => {
     getUsers();
     getConversations();
-  }, [getConversations, getUsers]);
+    subscribeToMessages();
+
+    return () => unsubscribeFromMessages();
+  }, [getConversations, getUsers, subscribeToMessages, unsubscribeFromMessages]);
 
   useEffect(() => {
     if (!activeConversationId) return;
 
     getMessages(activeConversationId);
-    subscribeToMessages(activeConversationId);
-
-    // cleanup
-    return () => unsubscribeFromMessages();
-  }, [getMessages, activeConversationId, subscribeToMessages, unsubscribeFromMessages]);
+  }, [getMessages, activeConversationId]);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden p-2 sm:p-3 md:p-8" style={frameStyle}>

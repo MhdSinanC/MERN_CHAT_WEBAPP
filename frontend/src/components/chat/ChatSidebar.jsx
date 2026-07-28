@@ -27,9 +27,8 @@ function mapUserForList(user, onlineUsers) {
 
 function ChatSidebar() {
   const conversations = useChatStore((state) => state.conversations);
-
-  console.log(conversations);
   const users = useChatStore((state) => state.users);
+  const unreadCounts = useChatStore((state) => state.unreadCounts) || {};
 
   const searchQuery = useChatStore((state) => state.searchQuery);
   const setSearchQuery = useChatStore((state) => state.setSearchQuery);
@@ -57,6 +56,8 @@ function ChatSidebar() {
   const filteredUsers = normalizedSearchQuery
     ? allUsers.filter((user) => user.name.toLowerCase().includes(normalizedSearchQuery))
     : allUsers;
+
+  const totalUnreadCount = Object.values(unreadCounts).reduce((acc, count) => acc + (count || 0), 0);
 
   return (
     <aside
@@ -106,11 +107,16 @@ function ChatSidebar() {
           <Tabs.List className="w-full gap-0.5">
             <Tabs.Tab id="chats" className="flex-1 justify-center gap-1.5">
               <MessageSquareIcon className="size-3.5 opacity-80" aria-hidden />
-              Chats
+              <span>Chats</span>
+              {totalUnreadCount > 0 && (
+                <span className="flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-xs">
+                  {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+                </span>
+              )}
             </Tabs.Tab>
             <Tabs.Tab id="users" className="flex-1 justify-center gap-1.5">
               <UsersIcon className="size-3.5 opacity-80" aria-hidden />
-              Users
+              <span>Users</span>
             </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
@@ -129,6 +135,7 @@ function ChatSidebar() {
                 key={conversation.id}
                 user={conversation}
                 selected={conversation.id === activeConversationId}
+                unreadCount={unreadCounts[conversation.id] || 0}
                 onSelect={() => setActiveConversationId(conversation.id)}
               />
             ))
@@ -144,6 +151,7 @@ function ChatSidebar() {
                 key={user.conversationId}
                 user={user}
                 selected={user.conversationId === activeConversationId}
+                unreadCount={unreadCounts[user.conversationId] || 0}
                 onSelect={() => setActiveConversationId(user.conversationId)}
               />
             ))
